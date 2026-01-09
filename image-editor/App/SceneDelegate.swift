@@ -4,7 +4,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
     private let feedbackGenerator = UIImpactFeedbackGenerator(style: .medium)
-    private var wasPrimaryHidden = true
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
@@ -37,15 +36,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 }
 
 extension SceneDelegate: UISplitViewControllerDelegate {
-    
-    func splitViewController(_ svc: UISplitViewController, willChangeTo displayMode: UISplitViewController.DisplayMode) {
-        let isPrimaryVisible = (displayMode == .oneOverSecondary || displayMode == .oneBesideSecondary)
-        
-        if wasPrimaryHidden && isPrimaryVisible {
+
+    func splitViewController(_ svc: UISplitViewController, willShow column: UISplitViewController.Column) {
+        if column == .primary {
             feedbackGenerator.impactOccurred()
             feedbackGenerator.prepare()
         }
-        
-        wasPrimaryHidden = !isPrimaryVisible
     }
 }
