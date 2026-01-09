@@ -1,6 +1,6 @@
 import UIKit
 
-class SidebarViewController: UIViewController {
+class CreationsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,7 +21,7 @@ class SidebarViewController: UIViewController {
             image: UIImage(systemName: "xmark"),
             style: .plain,
             target: self,
-            action: #selector(closeSidebar)
+            action: #selector(closeCreations)
         )
         navigationItem.rightBarButtonItem = closeButton
 
@@ -35,13 +35,13 @@ class SidebarViewController: UIViewController {
 
         let swipeGesture = UISwipeGestureRecognizer(
             target: self,
-            action: #selector(closeSidebar)
+            action: #selector(closeCreations)
         )
         swipeGesture.direction = .left
         view.addGestureRecognizer(swipeGesture)
     }
 
-    @objc private func closeSidebar() {
+    @objc private func closeCreations() {
         guard let splitVC = splitViewController else { return }
         splitVC.show(.secondary)
     }

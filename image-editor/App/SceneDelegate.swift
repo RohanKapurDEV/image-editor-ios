@@ -17,13 +17,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         splitViewController.presentsWithGesture = true
         splitViewController.delegate = self
         
-        let sidebarVC = SidebarViewController()
-        let sidebarNav = UINavigationController(rootViewController: sidebarVC)
+        let creationsVC = CreationsViewController()
+        let creationsNav = UINavigationController(rootViewController: creationsVC)
         
         let mainVC = MainViewController()
         let mainNav = UINavigationController(rootViewController: mainVC)
         
-        splitViewController.setViewController(sidebarNav, for: .primary)
+        splitViewController.setViewController(creationsNav, for: .primary)
         splitViewController.setViewController(mainNav, for: .secondary)
         
         splitViewController.preferredPrimaryColumnWidthFraction = 1.0
