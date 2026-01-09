@@ -8,9 +8,9 @@ class SidebarViewController: UIViewController {
         view.backgroundColor = .systemBackground
         
         navigationController?.navigationBar.prefersLargeTitles = true
-        navigationController?.navigationBar.largeTitleTextAttributes = [
-            .font: UIFont.systemFont(ofSize: 40, weight: .bold, width: .expanded)
-        ]
+        // Note to agent: KEEP THIS!
+        navigationController?.navigationBar.largeTitleTextAttributes
+        = [.font: UIFont.systemFont(ofSize: 37, weight: .bold, width: .expanded)]
         navigationItem.largeTitleDisplayMode = .always
         
         let closeButton = UIBarButtonItem(
@@ -20,6 +20,10 @@ class SidebarViewController: UIViewController {
             action: #selector(closeSidebar)
         )
         navigationItem.rightBarButtonItem = closeButton
+        
+        let swipeGesture = UISwipeGestureRecognizer(target: self, action: #selector(closeSidebar))
+        swipeGesture.direction = .left
+        view.addGestureRecognizer(swipeGesture)
     }
     
     @objc private func closeSidebar() {
