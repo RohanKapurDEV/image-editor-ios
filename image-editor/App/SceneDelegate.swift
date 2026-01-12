@@ -4,34 +4,90 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
     private let feedbackGenerator = UIImpactFeedbackGenerator(style: .medium)
+    private weak var splitViewController: UISplitViewController?
+    private var screenWidth: CGFloat = 0
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
-        
+
         window = UIWindow(windowScene: windowScene)
-        
-        let splitViewController = UISplitViewController(style: .doubleColumn)
-        splitViewController.preferredDisplayMode = .oneOverSecondary
-        splitViewController.preferredSplitBehavior = .overlay
-        splitViewController.presentsWithGesture = true
-        splitViewController.delegate = self
-        
+        screenWidth = windowScene.screen.bounds.width
+
+        let splitVC = UISplitViewController(style: .doubleColumn)
+        splitVC.preferredDisplayMode = .oneOverSecondary
+        splitVC.preferredSplitBehavior = .overlay
+        splitVC.presentsWithGesture = true
+        splitVC.delegate = self
+        self.splitViewController = splitVC
+
         let creationsVC = CreationsViewController()
         let creationsNav = UINavigationController(rootViewController: creationsVC)
-        
+
         let mainVC = MainViewController()
         let mainNav = UINavigationController(rootViewController: mainVC)
-        
-        splitViewController.setViewController(creationsNav, for: .primary)
-        splitViewController.setViewController(mainNav, for: .secondary)
-        
-        splitViewController.preferredPrimaryColumnWidthFraction = 1.0
-        splitViewController.maximumPrimaryColumnWidth = windowScene.screen.bounds.width
-        
+
+        splitVC.setViewController(creationsNav, for: .primary)
+        splitVC.setViewController(mainNav, for: .secondary)
+
+        splitVC.preferredPrimaryColumnWidthFraction = 1.0
+        splitVC.maximumPrimaryColumnWidth = screenWidth
+
+        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        panGesture.delegate = self
+        splitVC.view.addGestureRecognizer(panGesture)
+
         feedbackGenerator.prepare()
-        
-        window?.rootViewController = splitViewController
+
+        window?.rootViewController = splitVC
         window?.makeKeyAndVisible()
+    }
+
+    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        guard let mainVC = getMainViewController() else { return }
+
+        let translation = gesture.translation(in: gesture.view)
+        let velocity = gesture.velocity(in: gesture.view)
+
+        switch gesture.state {
+        case .changed:
+            let primaryVisible = splitViewController?.displayMode == .oneOverSecondary
+            let fraction: CGFloat
+
+            if primaryVisible {
+                fraction = max(0, 1 - (-translation.x / screenWidth))
+            } else {
+                fraction = max(0, min(1, translation.x / screenWidth))
+            }
+            mainVC.setBlurFraction(fraction)
+
+        case .ended, .cancelled:
+            let primaryVisible = splitViewController?.displayMode == .oneOverSecondary
+            let willShowPrimary: Bool
+
+            if primaryVisible {
+                willShowPrimary = velocity.x > 0 || (velocity.x == 0 && translation.x > -screenWidth / 2)
+            } else {
+                willShowPrimary = velocity.x > 0 && translation.x > 50
+            }
+            mainVC.finalizeBlur(to: willShowPrimary)
+
+        default:
+            break
+        }
+    }
+
+    private func getMainViewController() -> MainViewController? {
+        guard let navController = splitViewController?.viewController(for: .secondary) as? UINavigationController,
+              let mainVC = navController.viewControllers.first as? MainViewController else {
+            return nil
+        }
+        return mainVC
+    }
+}
+
+extension SceneDelegate: UIGestureRecognizerDelegate {
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
     }
 }
 
@@ -41,6 +97,13 @@ extension SceneDelegate: UISplitViewControllerDelegate {
         if column == .primary {
             feedbackGenerator.impactOccurred()
             feedbackGenerator.prepare()
+            getMainViewController()?.finalizeBlur(to: true)
+        }
+    }
+
+    func splitViewController(_ svc: UISplitViewController, willHide column: UISplitViewController.Column) {
+        if column == .primary {
+            getMainViewController()?.finalizeBlur(to: false)
         }
     }
 }
