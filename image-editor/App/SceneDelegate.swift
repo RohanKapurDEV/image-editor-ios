@@ -44,6 +44,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
     }
+
+    private func getMainViewController() -> MainViewController? {
+        guard let navController = splitViewController?.viewController(for: .secondary) as? UINavigationController,
+              let mainVC = navController.viewControllers.first as? MainViewController else {
+            return nil
+        }
+        return mainVC
+    }
 }
 
 extension SceneDelegate: UIGestureRecognizerDelegate {
@@ -58,6 +66,8 @@ extension SceneDelegate: UISplitViewControllerDelegate {
         if column == .primary {
             feedbackGenerator.impactOccurred()
             feedbackGenerator.prepare()
+            // Dismiss keyboard when showing CreationsView
+            getMainViewController()?.dismissKeyboard()
         }
     }
 
