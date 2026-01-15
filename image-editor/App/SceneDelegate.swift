@@ -43,45 +43,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-        guard let mainVC = getMainViewController() else { return }
-
-        let translation = gesture.translation(in: gesture.view)
-        let velocity = gesture.velocity(in: gesture.view)
-
-        switch gesture.state {
-        case .changed:
-            let primaryVisible = splitViewController?.displayMode == .oneOverSecondary
-            let fraction: CGFloat
-
-            if primaryVisible {
-                fraction = max(0, 1 - (-translation.x / screenWidth))
-            } else {
-                fraction = max(0, min(1, translation.x / screenWidth))
-            }
-            mainVC.setBlurFraction(fraction)
-
-        case .ended, .cancelled:
-            let primaryVisible = splitViewController?.displayMode == .oneOverSecondary
-            let willShowPrimary: Bool
-
-            if primaryVisible {
-                willShowPrimary = velocity.x > 0 || (velocity.x == 0 && translation.x > -screenWidth / 2)
-            } else {
-                willShowPrimary = velocity.x > 0 && translation.x > 50
-            }
-            mainVC.finalizeBlur(to: willShowPrimary)
-
-        default:
-            break
-        }
-    }
-
-    private func getMainViewController() -> MainViewController? {
-        guard let navController = splitViewController?.viewController(for: .secondary) as? UINavigationController,
-              let mainVC = navController.viewControllers.first as? MainViewController else {
-            return nil
-        }
-        return mainVC
     }
 }
 
@@ -97,13 +58,9 @@ extension SceneDelegate: UISplitViewControllerDelegate {
         if column == .primary {
             feedbackGenerator.impactOccurred()
             feedbackGenerator.prepare()
-            getMainViewController()?.finalizeBlur(to: true)
         }
     }
 
     func splitViewController(_ svc: UISplitViewController, willHide column: UISplitViewController.Column) {
-        if column == .primary {
-            getMainViewController()?.finalizeBlur(to: false)
-        }
     }
 }

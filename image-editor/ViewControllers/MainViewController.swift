@@ -1,61 +1,71 @@
 import UIKit
+import ImageIO
 
 class MainViewController: UIViewController {
 
-    let blurView = UIVisualEffectView(effect: nil)
-    private var blurAnimator: UIViewPropertyAnimator?
+    private let imageView = UIImageView()
+    private let captionLabel = UILabel()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
 
-        let blueSquare = UIView()
-        blueSquare.backgroundColor = .systemBlue
-        blueSquare.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(blueSquare)
-
-        NSLayoutConstraint.activate([
-            blueSquare.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            blueSquare.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            blueSquare.widthAnchor.constraint(equalToConstant: 100),
-            blueSquare.heightAnchor.constraint(equalToConstant: 100)
-        ])
-
-        blurView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(blurView)
-
-        NSLayoutConstraint.activate([
-            blurView.topAnchor.constraint(equalTo: view.topAnchor),
-            blurView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            blurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            blurView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
-    }
-
-    func setBlurFraction(_ fraction: CGFloat) {
-        blurAnimator?.stopAnimation(true)
-        blurAnimator?.finishAnimation(at: .current)
-
-        blurView.effect = nil
-        blurAnimator = UIViewPropertyAnimator(duration: 1, curve: .linear) { [weak self] in
-            self?.blurView.effect = UIBlurEffect(style: .systemMaterial)
+        if let asset = NSDataAsset(name: "horsegif"),
+           let animatedImage = createAnimatedImage(from: asset.data) {
+            imageView.image = animatedImage
         }
-        blurAnimator?.fractionComplete = max(0, min(1, fraction))
-        blurAnimator?.pausesOnCompletion = true
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(imageView)
+
+        captionLabel.text = "The first moving image ever made"
+        captionLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        captionLabel.textColor = .secondaryLabel
+        captionLabel.textAlignment = .center
+        captionLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(captionLabel)
+
+        NSLayoutConstraint.activate([
+            imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            imageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -10),
+            imageView.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.8),
+            imageView.heightAnchor.constraint(lessThanOrEqualTo: view.heightAnchor, multiplier: 0.8),
+
+            captionLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8),
+            captionLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+        ])
     }
 
-    func finalizeBlur(to enabled: Bool, animated: Bool = true) {
-        blurAnimator?.stopAnimation(true)
-        blurAnimator?.finishAnimation(at: .current)
-        blurAnimator = nil
+    private func createAnimatedImage(from data: Data) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return nil
+        }
 
-        let targetEffect: UIBlurEffect? = enabled ? UIBlurEffect(style: .systemMaterial) : nil
-        if animated {
-            UIView.animate(withDuration: 0.25) {
-                self.blurView.effect = targetEffect
+        let count = CGImageSourceGetCount(source)
+        var images: [UIImage] = []
+        var totalDuration: Double = 0
+
+        for i in 0..<count {
+            guard let cgImage = CGImageSourceCreateImageAtIndex(source, i, nil) else { continue }
+
+            // Get frame duration
+            var frameDuration: Double = 0.1
+            if let properties = CGImageSourceCopyPropertiesAtIndex(source, i, nil) as? [String: Any],
+               let webpProps = properties["{WebP}"] as? [String: Any],
+               let delay = webpProps["DelayTime"] as? Double {
+                frameDuration = delay
+            } else if let properties = CGImageSourceCopyPropertiesAtIndex(source, i, nil) as? [String: Any],
+                      let gifProps = properties[kCGImagePropertyGIFDictionary as String] as? [String: Any],
+                      let delay = gifProps[kCGImagePropertyGIFDelayTime as String] as? Double {
+                frameDuration = delay
             }
-        } else {
-            blurView.effect = targetEffect
+
+            totalDuration += frameDuration
+            images.append(UIImage(cgImage: cgImage))
         }
+
+        guard !images.isEmpty else { return nil }
+
+        return UIImage.animatedImage(with: images, duration: totalDuration)
     }
 }
